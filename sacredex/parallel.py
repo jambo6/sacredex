@@ -14,7 +14,7 @@ import random
 import tempfile
 from typing import List
 
-from .save import load_json, save_json
+from sacredex import load_json, save_json
 
 
 def dump_config_list_to_json_tmpfiles(config_list: List[dict]):
