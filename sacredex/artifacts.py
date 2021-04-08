@@ -10,7 +10,7 @@ from bson import ObjectId
 from pymongo.database import Database
 from sacred.run import Run
 
-from sacredex.save import load_pickle, save_pickle
+from sacredex import load_pickle, save_pickle
 
 CONTENT_TYPES = ("np.csv", "pd.csv", "pickle")
 
