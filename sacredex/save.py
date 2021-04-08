@@ -1,10 +1,16 @@
+"""
+save.py
+=============================
+Convenience functions for saving and loading.
+"""
 import json
 import pickle
+from typing import Any
 
 import json5
 
 
-def _get_json_func(file):
+def _get_json_func(file: str):
     # Returns json or json5 depending on filename end
     if file.endswith("json"):
         return json
@@ -14,7 +20,7 @@ def _get_json_func(file):
         raise NotImplementedError("Filename must end with json or json5")
 
 
-def load_json(file):
+def load_json(file: str):
     """ Load a json file into a dict. """
     f = _get_json_func(file)
     with open(file) as json_file:
@@ -22,14 +28,14 @@ def load_json(file):
     return data
 
 
-def save_json(data, fname):
+def save_json(data: dict, fname: str) -> None:
     """ Load a json file into a dict. """
     f = _get_json_func(fname)
     with open(fname, "w") as outfile:
         f.dump(data, outfile)
 
 
-def save_pickle(obj, filename, protocol=4):
+def save_pickle(obj: Any, filename: str, protocol: int = 4) -> None:
     """Given a python object and a filename, the method will save the object under that filename.
 
     Args:
@@ -44,7 +50,7 @@ def save_pickle(obj, filename, protocol=4):
         pickle.dump(obj, file, protocol=protocol)
 
 
-def load_pickle(filename):
+def load_pickle(filename: str) -> Any:
     """Basic dill/pickle load function.
 
     Args:

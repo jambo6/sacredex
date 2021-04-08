@@ -5,19 +5,22 @@ Functions for running experiments over multiple sacred configurations.
 """
 import logging
 import traceback
+from typing import Iterable, Optional, Union
 
+from pymongo import MongoClient
+from sacred import Experiment
 from sacred.observers import MongoObserver
 from tqdm import tqdm
 
 
 def run_over_configurations(
-    ex,
-    configuration_iterator,
-    client=None,
-    db_name="sacred",
-    purge_first=True,
-    log_level="WARNING",
-):
+    ex: Experiment,
+    configuration_iterator: Iterable[dict],
+    client: Optional[MongoClient] = None,
+    db_name: Optional[str] = "sacred",
+    purge_first: Optional[bool] = True,
+    log_level: Optional[str] = "WARNING",
+) -> None:
     """
     Runs a for loop over the specified experiment and configuration iterator.
 
@@ -54,7 +57,9 @@ def run_over_configurations(
     print("\nExperiment ran with a total of {} errors".format(error_counter))
 
 
-def run_configuration(ex, config, observer=None):
+def run_configuration(
+    ex: Experiment, config: dict, observer: Optional[MongoObserver] = None
+) -> None:
     """Run a single configuration dictionary.
 
     Args:
@@ -77,7 +82,7 @@ def run_configuration(ex, config, observer=None):
     ex.run(config_updates=top_level_config)
 
 
-def _log_run_error(config, error, counter=0):
+def _log_run_error(config: dict, error: str, counter: Optional[int] = 0) -> int:
     """ Print error message for failed run. """
     message = "{}: {}\n Failed for the following configuration: \n{}".format(
         error, traceback.format_exc(), "-" * 50 + "\n" + str(config) + "\n" + "-" * 50
@@ -87,20 +92,20 @@ def _log_run_error(config, error, counter=0):
     return counter
 
 
-def set_logger(ex, level="WARNING"):
+def set_logger(ex: Experiment, level: Optional[str] = "WARNING") -> None:
     """ Sets the sacred experiment logger. """
     logger = logging.getLogger("logger")
     logger.setLevel(getattr(logging, level))
     ex.logger = logger
 
 
-def _delete_run_id(mongo_observer, run_id):
+def _delete_run_id(mongo_observer: MongoObserver, run_id: int) -> None:
     """ Deletes the run and metrics given an id. """
     mongo_observer.runs.delete_one({"_id": run_id})
     mongo_observer.metrics.delete_one({"_id": run_id})
 
 
-def purge_incomplete_runs(mongo_observer):
+def purge_incomplete_runs(mongo_observer: MongoObserver) -> None:
     """ Deletes runs that do not have status marked "COMPLETED" or "RUNNING". """
     # Make sure it has the runs db
     if hasattr(mongo_observer, "runs"):
@@ -114,7 +119,9 @@ def purge_incomplete_runs(mongo_observer):
         print("Deleted {} failed runs.".format(len(incomplete_ids)))
 
 
-def _attach_mongo_observer(ex, client, db_name):
+def _attach_mongo_observer(
+    ex: Experiment, client: Union[MongoObserver, None], db_name: str
+) -> None:
     """ Attach the observer to the experiment. """
     if client is not None:
         observer = MongoObserver(client=client, db_name=db_name)
@@ -126,7 +133,7 @@ def _attach_mongo_observer(ex, client, db_name):
         )
 
 
-def _check_if_run(observer, config):
+def _check_if_run(observer: MongoObserver, config: dict) -> bool:
     """Returns True if the configuration is a subset of a configuration that already exists in the database.
 
     If every entry in the given config dictionary can be found within the configuration of a run in the mongo observer
@@ -163,7 +170,7 @@ def _check_if_run(observer, config):
     return has_run
 
 
-def _update_ingredient_params(ex, params):
+def _update_ingredient_params(ex: Experiment, params: dict) -> dict:
     """Updates parameters for sacred ingredients.
 
     This requires ingredient updates to be the key value pairs in configs such that the key is the ingredient name and

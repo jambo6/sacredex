@@ -12,11 +12,12 @@ This file helps keep track of completed runs in such situations.
 import os
 import random
 import tempfile
+from typing import List
 
 from .save import load_json, save_json
 
 
-def dump_config_list_to_json_tmpfiles(config_list):
+def dump_config_list_to_json_tmpfiles(config_list: List[dict]):
     """ Saves a list of configuration dictionaries to a temporary folder and returns the folder string. """
     folder = tempfile.mkdtemp()
     for i, c in enumerate(config_list):
@@ -35,16 +36,14 @@ class JsonFolderIterator:
     amended manually.
     """
 
-    def __init__(self, folder, randomise=True, verbose=1):
+    def __init__(self, folder, randomise=True):
         """
         Args:
             folder (str): The folder where the jsons have been saved.
             randomise (bool): Set True to return a random file rather than the next file
-            verbose (int): Set as 1 to log the number of files remaining.
         """
         self.folder = folder
         self.randomise = randomise
-        self.verbose = 1
         assert all([x.endswith("json") for x in self.files]), "All files must be json."
 
     @property
