@@ -1,24 +1,30 @@
 import logging
 import os
 import tempfile
+from typing import Any, Dict, Union
 
 import mdbh
 import numpy as np
 import pandas as pd
 from bson import ObjectId
+from pymongo.database import Database
+from sacred.run import Run
 
 from sacredex.save import load_pickle, save_pickle
 
 CONTENT_TYPES = ("np.csv", "pd.csv", "pickle")
 
 
-def _check_content_type(content_type):
+def _check_content_type(content_type: str) -> None:
+    # Check is in allowed content types
     assert (
         content_type in CONTENT_TYPES
     ), "Allowed content types are {}, got {}.".format(CONTENT_TYPES, content_type)
 
 
-def save_artifact(_run, item, name, content_type="pickle"):
+def save_artifact(
+    _run: Run, item: Any, name: str, content_type: str = "pickle"
+) -> None:
     """Save an artifact to the run in a format that can be handled by resolve_artifacts on loading.
 
     This works for the following content_types:
@@ -27,7 +33,7 @@ def save_artifact(_run, item, name, content_type="pickle"):
         pickle: Saves as a pickle, loaded with load_pickle.
 
     Args:
-        _run (sacred run obj): The current run object.
+        _run (sacred.run.Run): The current run object.
         item (np.ndarray, pd.Series, pd.DataFrame, pickleable object): Item to be saved.
         name (str): The identifying name of the data.
         content_type (str): Method of saving, defaults to pickle.
@@ -58,14 +64,14 @@ def save_artifact(_run, item, name, content_type="pickle"):
     os.remove(fname)
 
 
-def _get_content_type(db, file_id):
+def _get_content_type(db: Database, file_id: Union[str, ObjectId]) -> str:
     """ Returns the content type of the specified artifact id. """
     if not isinstance(file_id, ObjectId):
         file_id = ObjectId(file_id)
     return db["fs.files"].find_one({"_id": file_id}, {"contentType": 1})["contentType"]
 
 
-def _load_artifact(db, id, name, file_id, force=False):
+def _load_artifact(db: Database, id: int, name: str, file_id: str, force=False) -> Any:
     """ Load an artifact specified by its name and id according to its content_type. """
     # mdbh dumps the binary and returns the filename
     fname = mdbh.get_artifact(db, id, name, force)
@@ -95,7 +101,7 @@ def _load_artifact(db, id, name, file_id, force=False):
     return output
 
 
-def resolve_artifacts(db, frame, force=False):
+def resolve_artifacts(db: Database, frame: pd.DataFrame, force=False) -> Dict[str, Any]:
     """Attempt to load every artifact for each dataframe entry.
 
     This is intended to be used on files that were saved using the `save_artifact` method since the content_type

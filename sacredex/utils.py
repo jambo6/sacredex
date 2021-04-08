@@ -1,7 +1,18 @@
+"""
+utils.py
+==========================
+Contains generic helper functions.
+"""
+from typing import List
+
 from sklearn.model_selection import ParameterGrid
 
 
-def nested_parameter_grid(parameter_dict):
+class DepthError(Exception):
+    pass
+
+
+def nested_parameter_grid(parameter_dict: dict) -> List[dict]:
     """Parameter grid where there can be two nested layers of parameters.
 
     This is designed to work with sacred ingredients such that our inputs can be structured analogously to the sacred
@@ -41,9 +52,11 @@ def nested_parameter_grid(parameter_dict):
             if isinstance(value, dict):
                 dunder_keys.append(key)
                 for inner_key, inner_value in value.items():
-                    assert not isinstance(
-                        inner_value, dict
-                    ), "Only allowed one level of inner dictionaries."
+                    if isinstance(inner_value, dict):
+                        raise DepthError(
+                            "Only allowed one level of inner dictionaries, {} is at depth at least "
+                            "2".format(inner_value)
+                        )
                     new_parameter_dict[key + "__" + inner_key] = inner_value
             else:
                 new_parameter_dict[key] = value

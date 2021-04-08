@@ -1,5 +1,5 @@
 json5>=0.9.5
-mdbh @ git+https://gitlab.com/MaxSchambach/mdbh
+mdbh==0.4
 sacred>=0.2.0
 scikit-learn==0.24.1
 tqdm>=4.57.0

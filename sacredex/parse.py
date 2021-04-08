@@ -1,19 +1,21 @@
 import warnings
+from typing import List, Optional
 
 import mdbh
 import pandas as pd
+from pymongo.database import Database
 
 
-def _get_prefixed_elements(lst, prefix):
+def _get_prefixed_elements(lst: List, prefix: str) -> List:
     """ Get elements from a list of strings that begin with a specified prefix. """
     return [x for x in lst if x.startswith(prefix)]
 
 
-def _convert_dict_elements(frame, columns):
+def _convert_dict_elements(frame: pd.DataFrame, columns: List) -> pd.DataFrame:
     """Conversion methods for columns in a seed_averaged_frame that contain dictionary type entries.
 
     Sacred converts tuples to dicts to work with json format. Here we expand back out into tuples to provide a more
-    natural format, as well as to enable the use of aggregation funtions.
+    natural format, as well as to enable the use of aggregation functions.
 
     Implemented methods:
         - Conversion of list to tuple (since lists cannot be aggregated)
@@ -35,14 +37,19 @@ def _convert_dict_elements(frame, columns):
 
 
 def get_dataframe(
-    db,
-    ids=None,
-    completed_only=True,
-    include_artifacts=True,
-    open_metrics=True,
-    cache=False,
-):
-    """Adds small functionality to mdbh.get_dataframe.
+    db: Database,
+    ids: Optional[List] = None,
+    completed_only: Optional[bool] = True,
+    include_artifacts: Optional[bool] = True,
+    open_metrics: Optional[bool] = True,
+    cache: Optional[bool] = False,
+) -> pd.DataFrame:
+    """Slight extension of mdbh's get_dataframe function.
+
+    This simply calls mdbh.get_dataframe and then:
+        - Allows for COMPLETED filtering
+        - Converts config list elements to tuples, since tuples can be used with pandas aggregation functions
+        - Opens metrics of length 1 from list -> element
 
     Args:
         db (mongo database): The mongo database containing the runs and
@@ -50,11 +57,6 @@ def get_dataframe(
         completed_only (bool): Set True to return 'COMPLETED' runs only.
         include_artifacts (bool): Set True to return artifact list.
         open_metrics (bool): Set True to open metrics of length 1 from list -> value.
-        average_seeds (bool): Set True to average the metrics (keeping hold of the stddevs) over the seeds. This creates
-            two new metrics 'metrics.metric_name.mean', 'metrics.metric_name.std'. Note, this cannot be performed if
-            open metrics is not set to True. Further note, this will concatenate the id column into a new feature and
-            drop everything but the config and metric information since it is not clear how to handle the mean
-            operation.
         cache (bool): See mdbh.get_dataframe.
 
     Returns:
@@ -88,7 +90,9 @@ def get_dataframe(
     return frame
 
 
-def average_metrics_over_seed(frame, string_rounding=3, string_scaling=1.0):
+def average_metrics_over_seed(
+    frame: pd.DataFrame, string_rounding: int = 3, string_scaling: float = 1.0
+) -> pd.DataFrame:
     """Average metrics over different seeds for grouped config_list.
 
     Computes the mean and standard deviation of all metrics for each group of config_list with different seed values.
@@ -100,9 +104,6 @@ def average_metrics_over_seed(frame, string_rounding=3, string_scaling=1.0):
         string_rounding (int): Value to round the mean and std to when generating the string representation.
         string_scaling (float): Multiplies the mean and std by this value before producing the string representation.
             This will usually be either 1 (for no scaling) or 100 (when wanting to scale to 100%).
-
-    Todo:
-        - Handle situations where some metrics are list valued
     """
     # Col names
     metric_cols = [x for x in frame.columns if x.startswith("metrics.")]
